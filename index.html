@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#111827">
+<link rel="manifest" href="manifest.json">
+<title>한국사 연표 퀴즈 — 일제강점기</title>
+<style>
+*{box-sizing:border-box} body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Noto Sans KR",sans-serif;background:#f5f6f8;color:#17191c}
+.app{max-width:720px;margin:auto;min-height:100vh;padding:18px 16px 40px}
+header{display:flex;justify-content:space-between;align-items:center;margin:4px 0 18px}
+.logo{font-weight:900;font-size:21px;letter-spacing:-.8px}.logo span{color:#5965e8}
+.iconbtn{border:0;background:white;border-radius:14px;padding:10px 12px;font-size:15px;box-shadow:0 2px 12px #0000000c}
+.card{background:white;border-radius:24px;padding:22px;box-shadow:0 6px 24px #0000000b;margin-bottom:14px}
+.badge{display:inline-block;background:#eef0ff;color:#5059c9;border-radius:999px;padding:6px 10px;font-size:12px;font-weight:800}
+h1{font-size:28px;line-height:1.2;margin:13px 0 8px;letter-spacing:-1.2px} h2{font-size:20px;margin:0 0 12px}
+.sub{color:#6d727b;font-size:14px;line-height:1.6;margin:0}
+.controls{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:18px}
+button{font:inherit;cursor:pointer}
+.primary,.secondary{border:0;border-radius:16px;padding:14px;font-weight:800}
+.primary{background:#17191c;color:white}.secondary{background:#f0f1f4;color:#222}
+.event-list{display:grid;gap:9px;margin:16px 0}.event{padding:13px 14px;border:1px solid #e4e6eb;border-radius:14px;background:#fff}
+.event .year{font-weight:900;margin-right:7px;color:#5059c9}.event small{display:block;color:#858a93;margin-top:3px}
+.top{display:flex;justify-content:space-between;align-items:center;color:#6b7079;font-size:13px;margin-bottom:10px}
+.progress{height:7px;background:#e8e9ed;border-radius:99px;overflow:hidden}.bar{height:100%;background:#5965e8;width:0;transition:.25s}
+.question{font-size:18px;font-weight:850;line-height:1.45;margin:17px 0}
+.options{display:grid;gap:10px}.option{border:1.5px solid #dfe2e7;background:#fff;border-radius:16px;padding:15px;text-align:left;line-height:1.55}.option b{display:inline-flex;width:28px;height:28px;border-radius:50%;background:#f0f1f4;align-items:center;justify-content:center;margin-right:8px}
+.option.correct{border-color:#4f9d69;background:#eef9f1}.option.wrong{border-color:#d65b5b;background:#fff0f0}
+.feedback{margin-top:13px;padding:13px;border-radius:14px;background:#f5f6f8;font-size:14px;line-height:1.55}
+.hidden{display:none!important}.result{text-align:center}.score{font-size:52px;font-weight:950;margin:10px 0}.muted{color:#777}.mistake{margin-top:10px;text-align:left;padding:12px;border:1px solid #e7e8eb;border-radius:14px}
+.footer{font-size:11px;color:#92969d;text-align:center;margin-top:18px;line-height:1.5}
+</style>
+</head>
+<body>
+<div class="app">
+<header><div class="logo">한국사 <span>연표 퀴즈</span></div><button class="iconbtn" onclick="resetStats()">기록 초기화</button></header>
+
+<section id="home">
+<div class="card">
+<span class="badge">1910 — 1945</span>
+<h1>일제강점기 사건,<br>시간 순서로 잡기</h1>
+<p class="sub">시험지처럼 <b>문제와 보기에서는 연도를 완전히 숨기고</b>, 사건의 선후 관계만 보고 순서를 고르는 훈련 앱이에요. 정답을 고른 뒤에만 연도를 공개합니다.</p>
+<div class="controls">
+<button class="primary" onclick="startGame('normal')">연표 10문제</button>
+<button class="secondary" onclick="startGame('hard')">심화 10문제</button>
+</div>
+</div>
+<div class="card">
+<h2>오늘의 기록</h2>
+<div id="stats" class="sub"></div>
+</div>
+<div class="card">
+<h2>출제 범위</h2>
+<p class="sub">1910~1945년 일제강점기 사건을 바탕으로 출제합니다. 문제를 풀 때는 연도와 월을 숨기고, 정답을 선택한 뒤에만 시간 정보를 확인할 수 있습니다.</p>
+</div>
+
+<section id="game" class="hidden">
+<div class="card">
+<div class="top"><span id="qnum"></span><span id="scoremini"></span></div>
+<div class="progress"><div class="bar" id="bar"></div></div>
+<div class="question">다음 사건들을 <u>시간 순서대로</u> 옳게 나열한 것은?</div>
+<div id="given" class="event-list"></div>
+<div id="options" class="options"></div>
+<div id="feedback" class="feedback hidden"></div>
+<button id="next" class="primary hidden" style="width:100%;margin-top:12px" onclick="nextQuestion()">다음 문제</button>
+</div>
+</section>
+
+<section id="result" class="hidden">
+<div class="card result">
+<span class="badge">완료!</span>
+<h1>연표 훈련 끝</h1>
+<div class="score" id="finalScore"></div>
+<div id="finalText" class="sub"></div>
+<button class="primary" style="width:100%;margin-top:18px" onclick="startGame(mode)">다시 풀기</button>
+<button class="secondary" style="width:100%;margin-top:9px" onclick="goHome()">홈으로</button>
+</div>
+<div class="card">
+<h2>이번에 헷갈린 문제</h2><div id="mistakes"></div>
+</div>
+</section>
+
+<div class="footer">핵심 사건은 1910~1945년 일제강점기 한국사 학습 범위에 맞춰 구성했습니다.</div>
+</div>
+
+<script>
+const EVENTS=[
+[1910,"국권 피탈·조선 총독부 설치","식민 통치 시작"],
+[1910,"회사령 공포","1910년대 경제 통제"],
+[1910,"토지 조사 사업 시작","1910~1918"],
+[1911,"105인 사건","신민회 계열 탄압"],
+[1912,"조선 태형령 시행","무단 통치"],
+[1912,"독립 의군부 조직","임병찬"],
+[1913,"흥사단 창립","안창호"],
+[1915,"대한 광복회 조직","국내 비밀 결사"],
+[1917,"대동단결 선언","임시정부 수립의 기반"],
+[1918,"한인사회당 결성","사회주의 계열"],
+[1919,"2·8 독립 선언","도쿄 유학생"],
+[1919,"3·1 운동","전국적 만세 운동"],
+[1919,"대한민국 임시 정부 수립","상하이"],
+[1919,"의열단 조직","김원봉"],
+[1920,"봉오동 전투","홍범도"],
+[1920,"훈춘 사건·간도 참변","독립군 탄압"],
+[1920,"청산리 대첩","김좌진·홍범도 등"],
+[1921,"자유시 참변","독립군 시련"],
+[1922,"조선 민립 대학 기성회","민립 대학 운동"],
+[1923,"국민대표회의 개최","임시정부 개편 논의"],
+[1923,"관동 대지진 조선인 학살","일본"],
+[1925,"조선공산당 결성","사회주의 운동"],
+[1925,"치안 유지법 시행","사상 통제"],
+[1926,"6·10 만세 운동","순종 인산일"],
+[1926,"나석주 동양척식주식회사 의거","의열 투쟁"],
+[1927,"신간회 결성","민족 유일당 운동"],
+[1927,"근우회 결성","여성 민족 운동"],
+[1929,"광주 학생 항일 운동","학생 독립운동"],
+[1931,"만주 사변","일본의 만주 침략"],
+[1931,"조선어 학회 창립","우리말 연구"],
+[1932,"이봉창 의거","도쿄"],
+[1932,"윤봉길 의거","상하이 훙커우 공원"],
+[1932,"한국독립당 결성","민족주의 계열"],
+[1935,"민족 혁명당 결성","중국 관내 독립운동 세력"],
+[1937,"중일 전쟁 발발","전시 동원 강화"],
+[1937,"황국 신민 서사 암송 강요","민족 말살 통치"],
+[1938,"국가 총동원법 시행","전쟁 동원"],
+[1938,"조선 지원병 제도 실시","군사 동원"],
+[1939,"창씨개명 시행","민족 말살 정책"],
+[1940,"한국광복군 창설","대한민국 임시 정부"],
+[1940,"조선총독부 국민총력조선연맹 조직","전시 동원"],
+[1941,"대한민국 임시 정부 대일 선전 포고","태평양 전쟁"],
+[1942,"조선어 학회 사건","민족 문화 탄압"],
+[1943,"카이로 회담","한국 독립 약속"],
+[1944,"여자 정신 근로령 공포","강제 동원"],
+[1945,"광복","8월 15일"]
+];
+
+let questions=[],idx=0,score=0,mode='normal',mistakes=[];
+
+function shuffle(a){return [...a].sort(()=>Math.random()-.5)}
+function makeQuestions(){
+ const pool=shuffle(EVENTS);
+ questions=[];
+ for(let i=0;i<10;i++){
+   let chosen=[];
+   while(chosen.length<5){
+     const e=pool[Math.floor(Math.random()*pool.length)];
+     if(!chosen.some(x=>x[1]===e[1]) && (mode==='hard' || !chosen.some(x=>x[0]===e[0]))) chosen.push(e);
+   }
+   chosen.sort(()=>Math.random()-.5);
+   const correct=[...chosen].sort((a,b)=>a[0]-b[0] || a[1].localeCompare(b[1])).map(x=>x[1]);
+   const perms=[];
+   perms.push(correct);
+   while(perms.length<5){
+     const p=shuffle(correct);
+     if(!perms.some(x=>x.join('|')===p.join('|'))) perms.push(p);
+   }
+   questions.push({chosen,correct,options:perms});
+ }
+}
+function startGame(m){mode=m;idx=0;score=0;mistakes=[];makeQuestions();home.classList.add('hidden');result.classList.add('hidden');game.classList.remove('hidden');render();}
+function render(){
+ const q=questions[idx];
+ qnum.textContent=`${idx+1} / ${questions.length}`;
+ scoremini.textContent=`점수 ${score}`;
+ bar.style.width=`${idx/questions.length*100}%`;
+ const labels=['ㄱ','ㄴ','ㄷ','ㄹ','ㅁ']; given.innerHTML=q.chosen.map((e,i)=>`<div class="event"><span class="year">${labels[i]}</span>${e[1]}</div>`).join('');
+ options.innerHTML=q.options.map((p,i)=>`<button class="option" onclick="answer(${i})"><b>${i+1}</b>${p.map(t=>t).join(' → ')}</button>`).join('');
+ feedback.classList.add('hidden');next.classList.add('hidden');
+}
+function answer(i){
+ document.querySelectorAll('.option').forEach(x=>x.disabled=true);
+ const q=questions[idx], chosen=q.options[i], ok=chosen.join('|')===q.correct.join('|');
+ document.querySelectorAll('.option')[i].classList.add(ok?'correct':'wrong');
+ if(ok){
+   score++;
+   feedback.innerHTML='정답! 사건의 선후 관계를 정확하게 잡았어요.';
+ } else {
+   feedback.innerHTML='오답이에요. 정답 순서는 <b>'+q.correct.map(t=>t).join(' → ')+'</b>';
+   mistakes.push({q,chosen});
+ }
+ feedback.innerHTML += '<hr style="border:0;border-top:1px solid #ddd;margin:10px 0"><b>정답 확인용 연표</b><br>' +
+   q.correct.map(t=>{const e=q.chosen.find(x=>x[1]===t); return e[0]+'년 · '+e[1]+' · '+t}).join('<br>');
+ feedback.classList.remove('hidden');next.classList.remove('hidden');scoremini.textContent=`점수 ${score}`;
+}
+function nextQuestion(){idx++; if(idx<questions.length) render(); else finish();}
+function finish(){
+ game.classList.add('hidden');result.classList.remove('hidden');
+ finalScore.textContent=`${score} / ${questions.length}`;
+ finalText.textContent=score===10?'완벽해요. 연표 순서 감각이 아주 탄탄합니다.':score>=8?'좋아요. 헷갈린 사건만 한 번 더 보면 돼요.': '괜찮아요. 연도 흐름부터 다시 잡으면 금방 올라갑니다.';
+ localStorage.setItem('lastScore',score);localStorage.setItem('lastTotal',questions.length);
+ mistakesEl=document.getElementById('mistakes');
+ mistakesEl.innerHTML=mistakes.length?mistakes.map((m,n)=>`<div class="mistake"><b>${n+1}. 정답</b><br>${m.q.correct.map(t=>{const e=m.q.chosen.find(x=>x[1]===t);return e[0]+'년 '+e[1]+' · '+t}).join(' → ')}</div>`).join(''):'없어요! 전부 맞혔습니다.';
+ updateStats();
+}
+function goHome(){result.classList.add('hidden');game.classList.add('hidden');home.classList.remove('hidden');updateStats();}
+function updateStats(){
+ const s=localStorage.getItem('lastScore'),t=localStorage.getItem('lastTotal');
+ stats.innerHTML=s?`최근 점수 <b>${s}/${t}</b><br>다시 풀 때마다 새로운 사건 조합이 나옵니다.`:'아직 푼 기록이 없어요. 첫 10문제에 도전해보세요.';
+}
+function resetStats(){localStorage.clear();updateStats();}
+updateStats();
+</script><script>if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');</script>
+</body>
+</html>
